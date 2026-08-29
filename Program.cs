@@ -22,7 +22,8 @@ app.UseAuthorization();
 
 app.MapControllers();
 app.MapGet("/Time", () => {
-    return new { CurrentTime = DateTime.UtcNow.ToString("o") };
+    return new { CurrentTime = DateTime.UtcNow.ToString("o"),
+        TimeZone="UTC" };
 
 });
 
