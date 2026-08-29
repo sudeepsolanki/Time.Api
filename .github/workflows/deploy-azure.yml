@@ -1,0 +1,48 @@
+name: Deploy to Azure App Service
+
+on:
+  pull_request:
+    types: [closed]
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: production-deployment
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    # Runs only when the PR was merged, not when it was closed without merging.
+    if: github.event.pull_request.merged == true
+    runs-on: ubuntu-latest
+
+    env:
+      AZURE_WEBAPP_NAME: Web-App26
+      DOTNET_VERSION: 9.0.x
+      PUBLISH_PATH: ./publish
+
+    steps:
+      - name: Check out merged source
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.merge_commit_sha }}
+
+      - name: Set up .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: ${{ env.DOTNET_VERSION }}
+
+      - name: Restore dependencies
+        run: dotnet restore Time.Api.sln
+
+      - name: Build and publish
+        run: dotnet publish Time.Api.csproj --configuration Release --no-restore --output ${{ env.PUBLISH_PATH }}
+
+      - name: Deploy to Azure App Service
+        uses: azure/webapps-deploy@v3
+        with:
+          app-name: ${{ env.AZURE_WEBAPP_NAME }}
+          publish-profile: ${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE }}
+          package: ${{ env.PUBLISH_PATH }}
